@@ -38,9 +38,9 @@ void loop()
   {
     tmp = 0, hum = 0;
   }
-  M5.lcd.fillRect(0, 20, 100, 60, BLACK); // Fill the screen with black (to clear the screen).
-  M5.lcd.setCursor(0, 20);
-  M5.Lcd.printf("Temp: %2.1f  \r\nHumi: %2.0f%%  \r\nPressure:%2.0fPa\r\n",
+  M5.lcd.fillRect(0, 10, 100, 60, BLACK); // Fill the screen with black (to clear the screen).
+  M5.lcd.setCursor(0, 10);
+  M5.Lcd.printf("Temperature: %2.1f  \r\nHumidity: %2.0f%%  \r\nPressure:%2.0fPa\r\n",
                 tmp, hum, pressure);
   delay(2000);
 }
