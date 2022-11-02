@@ -7,7 +7,6 @@
 
 // Env Sensors
 SHT3X sht30;
-QMP6988 qmp6988;
 
 // Clients
 WiFiClient espClient;
@@ -19,42 +18,56 @@ const char *password = "ckebab1234";
 const char *mqtt_server = "192.168.1.114";
 const char *mqtt_username = "client";
 const char *mqtt_pass = "test";
+const char *mqtt_topic = "test";
 
+// Variables
 unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE (50)
+#define ANN_BUFFER_SIZE (17)
+char announcement[ANN_BUFFER_SIZE];
 char msg[MSG_BUFFER_SIZE];
+char display_temp[MSG_BUFFER_SIZE];
+char display_humi[MSG_BUFFER_SIZE];
 int value = 0;
 bool running = false;
+int zone_id = 1;
 
 // FUNCTIONS
 // Wifi
 void setupWifi();
-char* getEnvData();
+void getEnvData();
 
-// MQTT pubsubClient callback and client-connect
-void callback(char *topic, byte *payload, unsigned int length);
+// MQTT pubsubClient client-connect function
 void connect();
 
 // ENV Sensor data
-float tmp = 0.0;
-float hum = 0.0;
-float pressure = 0.0;
+float temp = 0.0;
+float humi = 0.0;
 
 void setup()
 {
+    // Setup
     M5.begin();
     M5.Power.begin();
+    M5.Lcd.setTextDatum(MC_DATUM); // Set text alignment to center
+    M5.lcd.setTextSize(3);
+    M5.Lcd.printf("Zone %d", zone_id);
+
+    // Wifi and MQTT
+    M5.lcd.setTextSize(1);   // Change text size for messages
+    M5.lcd.setCursor(0, 40); // Move cursor futher down
     setupWifi();
     client.setServer(mqtt_server, 1883); // Sets the server details.
-    client.setCallback(callback);        // Sets the message callback function.
-    M5.lcd.setTextSize(1);               // Set the text size to 2.
 
+    // Wire for sensors
     Wire.begin(); // Wire init, adding the I2C bus.
-    qmp6988.init();
 
-    connect(); // Connect to client
+    // Connect to client
+    connect();
 
-    M5.Lcd.println("Please press 'Left' to send data");
+    // Default message
+    M5.lcd.setTextSize(2); // Change text size
+    M5.Lcd.println("Press 'Left' to send data");
 }
 
 void loop()
@@ -85,20 +98,16 @@ void loop()
 
     if (running == true)
     {
-        if (now - lastMsg > 10000)
+        if (now - lastMsg > 2000)
         {
+            M5.lcd.fillRect(0, 30, 320, 190, BLACK); // Fill the screen with black (to clear the screen).
+
             lastMsg = now;
             ++value;
 
-            getEnvData();
+            getEnvData(); // Get environmentdata and save in msg
 
-            client.publish("test", msg); // Publishes a message to the specified topic.
-
-            if (value % 6 == 0)
-            {
-                M5.Lcd.clear();
-                M5.Lcd.setCursor(0, 0);
-            }
+            client.publish(mqtt_topic, msg); // Publishes a message to the specified topic.
         }
     }
 }
@@ -118,18 +127,6 @@ void setupWifi()
     M5.Lcd.printf("\nSuccess\n");
 }
 
-void callback(char *topic, byte *payload, unsigned int length)
-{
-    M5.Lcd.print("Message arrived [");
-    M5.Lcd.print(topic);
-    M5.Lcd.print("] ");
-    for (int i = 0; i < length; i++)
-    {
-        M5.Lcd.print((char)payload[i]);
-    }
-    M5.Lcd.println();
-}
-
 void connect()
 {
     while (!client.connected())
@@ -143,9 +140,9 @@ void connect()
         {
             M5.Lcd.printf("\nSuccess\n");
             // Once connected, publish an announcement to the topic.
-            client.publish("test", "hello world");
-            // ... and resubscribe.
-            client.subscribe("test");
+            snprintf(announcement, ANN_BUFFER_SIZE, "Zone %d connected", zone_id); // Format to the specified string and store it in a variable.
+
+            client.publish(mqtt_topic, announcement);
         }
         else
         {
@@ -157,25 +154,25 @@ void connect()
     }
 }
 
-char* getEnvData()
+void getEnvData()
 {
-    pressure = qmp6988.calcPressure();
     if (sht30.get() == 0)
-    {                      // Obtain the data of SHT30.
-        tmp = sht30.cTemp; // Store the temperature obtained from SHT30.
+    {                       // Obtain the data of SHT30.
+        temp = sht30.cTemp; // Store the temperature obtained from SHT30.
 
-        hum = sht30.humidity; // Store the humidity obtained from the SHT30.
+        humi = sht30.humidity; // Store the humidity obtained from the SHT30.
     }
     else
     {
-        tmp = 0, hum = 0;
+        temp = 0, humi = 0;
     }
-    M5.lcd.fillRect(0, 10, 100, 60, BLACK); // Fill the screen with black (to clear the screen).
-    M5.lcd.setCursor(0, 10);
 
-    snprintf(msg, MSG_BUFFER_SIZE, "{Temperature: %2.1f, Humidity: %2.0f%%}", tmp, hum); // Format to the specified string and store it in MSG.
+    snprintf(msg, MSG_BUFFER_SIZE, "{Temperature: %2.1f, Humidity: %2.0f%%}", temp, humi); // Format to the specified string and store it in MSG.
+    snprintf(display_temp, MSG_BUFFER_SIZE, "Temperature: %2.1f", temp);
+    snprintf(display_humi, MSG_BUFFER_SIZE, "Humidity: %2.0f%%", humi);
 
-    M5.Lcd.println(msg);
-
-    return msg;
+    M5.lcd.setCursor(0, 100);
+    M5.Lcd.drawString(display_temp, (int)(M5.Lcd.width() / 2), 110, 2);
+    M5.Lcd.drawString(display_humi, (int)(M5.Lcd.width() / 2), 140, 2);
+    // M5.Lcd.printf("Temperature: %2.1f\nHumidity: %2.0f%%", temp, humi);
 }
