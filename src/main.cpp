@@ -28,8 +28,7 @@ char announcement[ANN_BUFFER_SIZE];
 char msg[MSG_BUFFER_SIZE];
 char display_temp[MSG_BUFFER_SIZE];
 char display_humi[MSG_BUFFER_SIZE];
-int value = 0;
-bool running = false;
+bool running;
 int zone_id = 1;
 
 // FUNCTIONS
@@ -77,38 +76,57 @@ void loop()
     {
         connect();
     }
+
     client.loop(); // This function is called periodically to allow clients to
                    // process incoming messages and maintain connections to the
                    // server.
 
     unsigned long now = millis(); // Obtain the host startup duration.
 
-    M5.update(); // Check the status of the key.
+    M5.update(); // Check the status of the buttons.
     if (M5.BtnA.wasPressed())
     {
-        if (running == false)
+        if (!running && lastMsg == 0)
+        {
+            M5.lcd.fillRect(0, 30, 320, 190, BLACK);        // Fill the screen with black (to clear the screen).
+            M5.Lcd.drawString("Temperature:", 140, 110, 2); // Display temperature on the controller
+            M5.Lcd.drawString("Humidity:", 150, 140, 2);    // Display humidity on the controller
+            
+            getEnvData(); // Get environmentdata and display it
+        }
+        
+        if (!running)
         {
             running = true;
+            M5.lcd.fillRect(170, 0, 140, 20, BLACK); // Clear running/not running state
+            M5.Lcd.drawString("Running", 263, 0, 1); // Display state on the controller
         }
         else
         {
             running = false;
+            M5.Lcd.drawString("Not Running", 240, 0, 1); // Display state on the controller
         }
     }
 
-    if (running == true)
+    if (running)
     {
-        if (now - lastMsg > 2000)
+        if (now - lastMsg > 10000)
         {
-            M5.lcd.fillRect(0, 30, 320, 190, BLACK); // Fill the screen with black (to clear the screen).
+            getEnvData(); // Get environmentdata and display it
 
-            lastMsg = now;
-            ++value;
-
-            getEnvData(); // Get environmentdata and save in msg
+            lastMsg = now; // Set the last message to current time.
 
             client.publish(mqtt_topic, msg); // Publishes a message to the specified topic.
         }
+    }
+
+    if (M5.BtnB.wasPressed())
+    {
+        M5.lcd.fillRect(220, 100, 80, 30, BLACK); // Fill the screen with black (to clear the temperature).
+        M5.lcd.fillRect(210, 130, 60, 30, BLACK); // Fill the screen with black (to clear the humidity).
+
+        M5.Lcd.drawString("-18.6", 260, 110, 2); // Display temperature on the controller
+        M5.Lcd.drawString("49%", 240, 140, 2);   // Display humidity on the controller
     }
 }
 
@@ -168,11 +186,13 @@ void getEnvData()
     }
 
     snprintf(msg, MSG_BUFFER_SIZE, "{Temperature: %2.1f, Humidity: %2.0f%%}", temp, humi); // Format to the specified string and store it in MSG.
-    snprintf(display_temp, MSG_BUFFER_SIZE, "Temperature: %2.1f", temp);
-    snprintf(display_humi, MSG_BUFFER_SIZE, "Humidity: %2.0f%%", humi);
+    snprintf(display_temp, MSG_BUFFER_SIZE, "%2.1f", temp);                                // Format string for displaying temperature on the controller
+    snprintf(display_humi, MSG_BUFFER_SIZE, "%2.0f%%", humi);                              // Format string for displaying humidity on the controller
 
-    M5.lcd.setCursor(0, 100);
-    M5.Lcd.drawString(display_temp, (int)(M5.Lcd.width() / 2), 110, 2);
-    M5.Lcd.drawString(display_humi, (int)(M5.Lcd.width() / 2), 140, 2);
-    // M5.Lcd.printf("Temperature: %2.1f\nHumidity: %2.0f%%", temp, humi);
+    M5.lcd.fillRect(220, 100, 80, 30, BLACK); // Fill the screen with black (to clear the temperature).
+    M5.lcd.fillRect(210, 130, 60, 30, BLACK); // Fill the screen with black (to clear the humidity).
+
+    // M5.lcd.setCursor(0, 100);
+    M5.Lcd.drawString(display_temp, 265, 110, 2); // Display temperature on the controller
+    M5.Lcd.drawString(display_humi, 240, 140, 2); // Display humidity on the controller
 }
