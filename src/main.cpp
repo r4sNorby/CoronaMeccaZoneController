@@ -15,7 +15,7 @@ PubSubClient client(espClient);
 // Configure the name and password of the connected wifi and your MQTT Serve host.
 const char *ssid = "CoronaMecca";
 const char *password = "ckebab1234";
-const char *mqtt_server = "CoronaMeccaServer";
+const char *mqtt_server = "192.168.1.114";
 const char *mqtt_username = "client";
 const char *mqtt_pass = "test";
 const char *mqtt_topic = "test";
@@ -79,9 +79,13 @@ void loop()
     // M5.Lcd.clear(); // Clear the screen.
     if (!client.connected())
     {
-        M5.Lcd.setCursor(0, 56); // Set cursor to top of screen
-        M5.lcd.fillRect(0, 56, 320, 184, BLACK); // Clear the screen
-        connect();
+        M5.Lcd.setCursor(0, 40);                 // If connection is lost, set cursor to top of screen
+        M5.lcd.fillRect(0, 40, 320, 184, BLACK); // Clear the screen
+        connect();                               // Connect to MQTT server
+
+        M5.lcd.fillRect(0, 30, 320, 190, BLACK);          // Clear the screen
+        M5.Lcd.drawString("Temperatur:", 140, 110, 2);    // Display temperature on the controller
+        M5.Lcd.drawString("Luftfugtighed:", 130, 140, 2); // Display humidity on the controller
     }
 
     client.loop(); // This function is called periodically to allow clients to
@@ -95,7 +99,7 @@ void loop()
     {
         if (!running && lastMsg == 0)
         {
-            M5.lcd.fillRect(0, 30, 320, 190, BLACK);          // Fill the screen with black (to clear the screen).
+            M5.lcd.fillRect(0, 30, 320, 190, BLACK);          // Fill the screen with black (to clear the screen)
             M5.Lcd.drawString("Temperatur:", 140, 110, 2);    // Display temperature on the controller
             M5.Lcd.drawString("Luftfugtighed:", 130, 140, 2); // Display humidity on the controller
 
