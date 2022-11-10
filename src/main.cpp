@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include <PubSubClient.h>
 #include <WiFi.h>
 #include <M5Stack.h>
@@ -13,7 +12,7 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 // Configure the name and password of the connected wifi and your MQTT Serve host.
-const char *ssid = "CoronaMecca";
+const char *ssid = "CoolCorona";
 const char *password = "ckebab1234";
 const char *mqtt_server = "192.168.1.114";
 const char *mqtt_username = "client";
