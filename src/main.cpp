@@ -3,6 +3,7 @@
 #include <M5Stack.h>
 #include <M5_ENV.h>
 #include <Adafruit_BMP280.h>
+#include "keyboard.h"
 
 // Env Sensors
 SHT3X sht30;
@@ -11,13 +12,17 @@ SHT3X sht30;
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-// Configure the name and password of the connected wifi and your MQTT Serve host.
+// Wifi and MQTT Server.
 const char *ssid = "CoolCorona";
 const char *password = "ckebab1234";
 const char *mqtt_server = "192.168.1.114";
 const char *mqtt_username = "client";
 const char *mqtt_pass = "test";
 const char *mqtt_topic = "test";
+
+// Notes
+#define NOTE_D0 -1
+#define NOTE_DH6 990
 
 // Variables
 unsigned long lastMsg = 0;
@@ -132,11 +137,24 @@ void loop()
 
     if (M5.BtnB.wasPressed())
     {
+        M5.Speaker.tone(NOTE_DH6);
         M5.lcd.fillRect(220, 100, 80, 30, BLACK); // Fill the screen with black (to clear the temperature).
         M5.lcd.fillRect(220, 130, 60, 30, BLACK); // Fill the screen with black (to clear the humidity).
 
         M5.Lcd.drawString("-18.6", 260, 110, 2); // Display temperature on the controller
         M5.Lcd.drawString("49%", 250, 140, 2);   // Display humidity on the controller
+    }
+    if (M5.BtnC.wasPressed())
+    {
+        M5.Speaker.end();
+    }
+    if (M5.BtnC.pressedFor(1000))
+    {
+        M5.Lcd.clear();
+        Keyboard keyboard;
+        keyboard.showkeyboard = true;
+        M5.Speaker.tone(661, 120); // frequency 3000, with a duration of 200ms
+        char *s = keyboard.keyboard();
     }
 }
 
