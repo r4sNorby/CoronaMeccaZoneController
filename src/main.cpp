@@ -154,7 +154,7 @@ void loop()
         Keyboard keyboard;
         keyboard.showkeyboard = true;
         M5.Speaker.tone(661, 120); // frequency 3000, with a duration of 200ms
-        char *s = keyboard.keyboard();
+        char *s = keyboard.start();
     }
 }
 
